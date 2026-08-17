@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Food Corner — Quản lý Vốn &amp; Lợi Nhuận</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --ink:#2B3A24; --olive:#3F5C33; --olive-deep:#2C4224; --cream:#FBF7EC;
+    --card:#FFFFFF; --gold:#E3A93B; --coffee:#6F4A32; --line:#E4DCC6;
+    --hoang:#3F5C33; --tai:#E3A93B; --danger:#B5533C; --cost-bg:#FBF6EE;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);
+    background-image:radial-gradient(circle at 6px 6px, rgba(63,92,51,0.06) 1.4px, transparent 1.5px);
+    background-size:26px 26px; color:var(--ink); font-family:'Nunito Sans',sans-serif; padding:0 0 60px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+  header{background:var(--olive);color:var(--cream);padding:26px 0 0;border-bottom:6px solid var(--gold);}
+  header .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:18px;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  h1{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:26px;margin:0;letter-spacing:.2px;}
+  .brand p{margin:2px 0 0;font-size:13px;opacity:.85;}
+  .head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .ghost-btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);
+    font-family:'Nunito Sans',sans-serif;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:8px;cursor:pointer;}
+  .ghost-btn:hover{background:rgba(255,255,255,.22);}
+  input[type=file]{display:none;}
+
+  nav{display:flex;gap:4px;}
+  nav button{background:transparent;border:none;color:var(--cream);opacity:.7;font-family:'Baloo 2',sans-serif;
+    font-weight:600;font-size:14.5px;padding:12px 18px;cursor:pointer;border-bottom:3px solid transparent;}
+  nav button.active{opacity:1;border-bottom:3px solid var(--gold);}
+  nav button:hover{opacity:1;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--olive-deep);color:#fff;
+    padding:11px 20px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.2);
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  .page{display:none;padding-top:26px;}
+  .page.active{display:block;}
+
+  .section-label{font-family:'Baloo 2',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;
+    color:var(--coffee);margin:30px 0 12px;display:flex;align-items:center;gap:10px;}
+  .section-label:first-child{margin-top:0;}
+  .section-label::after{content:"";flex:1;height:1px;background:var(--line);}
+  .section-label .hint{font-size:11px;text-transform:none;letter-spacing:0;color:#9aa590;font-weight:400;}
+
+  .card{background:var(--card);border-radius:16px;border:1px solid var(--line);padding:22px;
+    box-shadow:0 4px 12px rgba(43,58,36,.04);}
+  .card.cost-card{background:var(--cost-bg);border-left:5px solid var(--coffee);}
+
+  /* ---- Forms ---- */
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12.5px;font-weight:700;color:#5c6b53;}
+  .field input{font-family:'Nunito Sans',sans-serif;font-size:14.5px;padding:9px 11px;border-radius:9px;
+    border:1.5px solid var(--line);color:var(--olive-deep);font-weight:700;background:#fff;}
+  .field input:focus{outline:none;border-color:var(--olive);}
+  .live-preview{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;}
+  .live-preview .item{background:var(--cream);border-radius:10px;padding:10px 16px;flex:1;min-width:140px;}
+  .live-preview .item .l{font-size:11.5px;color:#8a9a80;font-weight:700;}
+  .live-preview .item .v{font-family:'Baloo 2',sans-serif;font-size:18px;color:var(--olive-deep);font-weight:700;}
+  .live-preview .item.profit .v.neg{color:var(--danger);}
+  .primary-btn{background:var(--olive);color:#fff;border:none;font-family:'Baloo 2',sans-serif;font-weight:600;
+    font-size:14.5px;padding:12px 26px;border-radius:10px;cursor:pointer;margin-top:18px;}
+  .primary-btn:hover{background:var(--olive-deep);}
+  .secondary-btn{background:#fff;color:var(--olive);border:1.5px solid var(--olive);font-family:'Baloo 2',sans-serif;
+    font-weight:600;font-size:13px;padding:8px 16px;border-radius:9px;cursor:pointer;}
+  .secondary-btn:hover{background:var(--cream);}
+  .cancel-link{background:none;border:none;color:#8a7a54;font-size:12.5px;font-weight:700;cursor:pointer;
+    margin-top:18px;margin-left:12px;text-decoration:underline;}
+
+  table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+  table.data-table thead th{background:var(--olive);color:#fff;font-family:'Baloo 2',sans-serif;font-weight:600;
+    padding:10px 8px;text-align:right;}
+  table.data-table thead th:first-child{text-align:left;}
+  table.data-table tbody td{padding:8px;text-align:right;border-bottom:1px solid var(--line);}
+  table.data-table tbody td:first-child{text-align:left;font-weight:700;color:var(--olive-deep);}
+  table.data-table tbody tr:nth-child(even){background:#F7F4E9;}
+  table.data-table tbody tr:hover{background:#F0EBD8;cursor:pointer;}
+  .row-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .row-actions button{border:none;background:none;cursor:pointer;font-size:15px;padding:2px 4px;}
+  .table-scroll{max-height:400px;overflow:auto;border-radius:12px;border:1px solid var(--line);}
+  .neg{color:var(--danger);}
+  .empty-row td, .empty-note{text-align:center;color:#9aa590;padding:26px;font-style:italic;}
+
+  /* ---- Auth / login screen ---- */
+  #auth-screen{position:fixed;inset:0;background:var(--olive-deep);display:flex;align-items:center;
+    justify-content:center;z-index:1000;padding:20px;}
+  #auth-screen.hidden{display:none;}
+  .auth-card{background:var(--card);border-radius:18px;padding:34px 30px;width:100%;max-width:360px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .auth-card h2{font-family:'Baloo 2',sans-serif;color:var(--olive-deep);margin:0 0 4px;font-size:20px;}
+  .auth-card p.sub{color:var(--coffee);font-size:13px;margin:0 0 20px;}
+  .auth-card label{display:block;font-size:12.5px;font-weight:700;color:var(--olive-deep);margin:14px 0 5px;}
+  .auth-card input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:10px;
+    border:1.5px solid var(--line);font-family:'Nunito Sans',sans-serif;font-size:14px;color:var(--olive-deep);}
+  .auth-card input:focus{outline:none;border-color:var(--olive);}
+  .auth-card button{width:100%;margin-top:20px;}
+  .auth-error{color:var(--danger);font-size:12.5px;margin-top:12px;display:none;}
+  .auth-error.show{display:block;}
+  #app-root{display:none;}
+  #app-root.ready{display:block;}
+  .user-badge{display:flex;align-items:center;gap:10px;color:var(--cream);font-size:12.5px;}
+  .user-badge .role-pill{background:var(--gold);color:var(--olive-deep);font-weight:700;font-size:10.5px;
+    padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
+  .user-badge button{background:transparent;border:1.5px solid rgba(251,247,236,.4);color:var(--cream);
+    padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Nunito Sans',sans-serif;}
+  .user-badge button:hover{border-color:var(--cream);}
+  [data-owner-only]{display:none;}
+  .role-owner [data-owner-only]{display:revert;}
+
+  /* ---- Nhập liệu: bán theo món (card grid) ---- */
+  .item-group-title{font-family:'Baloo 2',sans-serif;font-size:13px;color:var(--olive-deep);font-weight:700;
+    margin:16px 0 10px;display:flex;align-items:center;gap:8px;}
+  .item-group-title:first-child{margin-top:0;}
+  .item-group-title::after{content:'';flex:1;height:1px;background:var(--line);}
+  .item-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;}
+  .item-card{background:var(--cream);border:1.5px solid var(--line);border-radius:12px;padding:10px;
+    display:flex;align-items:center;gap:10px;transition:border-color .15s,background .15s;}
+  .item-card.has-qty{border-color:var(--olive);background:#EFEBD8;}
+  .item-card-body{flex:1;min-width:0;}
+  .item-card-name{font-weight:700;color:var(--olive-deep);font-size:12.5px;line-height:1.3;
+    white-space:normal;word-break:break-word;}
+  .item-card-price{font-size:11.5px;color:var(--coffee);margin-top:1px;}
+  .item-card-sub{font-family:'Baloo 2',sans-serif;font-size:13px;font-weight:700;color:var(--olive-deep);
+    margin-top:3px;}
+  .qty-stepper{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+  .qty-stepper button{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line);background:#fff;
+    color:var(--olive-deep);font-weight:700;cursor:pointer;line-height:1;font-size:14px;padding:0;}
+  .qty-stepper button:hover{background:var(--cream);border-color:var(--olive);}
+  .qty-stepper input{width:34px;font-family:'Nunito Sans',sans-serif;font-weight:700;color:var(--olive-deep);
+    border:1.5px solid var(--line);border-radius:7px;padding:4px 2px;text-align:center;}
+  .items-sales-total{display:flex;justify-content:flex-end;align-items:baseline;gap:8px;margin-top:14px;
+    padding-top:12px;border-top:1px dashed var(--line);font-family:'Baloo 2',sans-serif;}
+  .items-sales-total .l{font-size:12.5px;color:var(--coffee);}
+  .items-sales-total .v{font-size:18px;font-weight:700;color:var(--olive-deep);}
+
+  /* ---- Dashboard ---- */
+  .picker-bar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;
+    display:flex;gap:22px;flex-wrap:wrap;align-items:center;box-shadow:0 4px 12px rgba(43,58,36,.04);}
+  .picker-field{display:flex;flex-direction:column;gap:4px;}
+  .picker-field label{font-size:12px;font-weight:700;color:#7c8a72;}
+  .picker-field input{font-family:'Nunito Sans',sans-serif;font-size:14px;padding:7px 10px;border-radius:8px;
+    border:1.5px solid var(--line);color:var(--olive-deep);font-weight:700;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+  .kpi{background:var(--card);border-radius:14px;padding:18px 20px;border:1px solid var(--line);
+    box-shadow:0 4px 12px rgba(43,58,36,.04);}
+  .kpi .label{font-size:12.5px;color:#7c8a72;font-weight:700;}
+  .kpi .value{font-family:'Baloo 2',sans-serif;font-size:24px;font-weight:700;color:var(--olive-deep);margin-top:4px;}
+
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media (max-width:900px){.metric-grid{grid-template-columns:1fr;}}
+
+  .cup-panel{background:var(--card);border-radius:18px;border:1px solid var(--line);padding:26px;display:flex;
+    gap:28px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 12px rgba(43,58,36,.04);}
+  .cup-copy{flex:1;min-width:220px;}
+  .cup-copy .headline{font-family:'Baloo 2',sans-serif;font-size:19px;color:var(--olive-deep);margin:0 0 6px;}
+  .cup-copy p{margin:0 0 10px;font-size:13.5px;color:#5c6b53;line-height:1.5;}
+  .cup-copy .pct{font-family:'Baloo 2',sans-serif;font-size:36px;color:var(--gold);}
+  #cup-liquid{transition:y 1s cubic-bezier(.4,0,.2,1), height 1s cubic-bezier(.4,0,.2,1);}
+
+  .split-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;}
+  @media (max-width:760px){.split-grid{grid-template-columns:1fr;}}
+  .chart-card{background:var(--card);border-radius:16px;border:1px solid var(--line);padding:20px;
+    box-shadow:0 4px 12px rgba(43,58,36,.04);}
+  .chart-card h3{font-family:'Baloo 2',sans-serif;font-size:15px;margin:0 0 14px;color:var(--olive-deep);}
+  .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;}
+
+  /* ---- Dữ liệu nền ---- */
+  .ratio-row{display:flex;gap:20px;align-items:center;margin-top:14px;flex-wrap:wrap;}
+  .ratio-row .field{max-width:140px;}
+  .save-hint{font-size:12px;color:#9aa590;margin-top:10px;font-style:italic;}
+
+  table.menu-table{width:100%;border-collapse:collapse;font-size:13px;}
+  table.menu-table th{background:var(--olive);color:#fff;padding:8px;text-align:left;font-family:'Baloo 2',sans-serif;font-size:12.5px;}
+  table.menu-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.menu-table tr:nth-child(even){background:#F7F4E9;}
+  table.menu-table .code-cell{font-family:'Baloo 2',sans-serif;font-weight:700;color:var(--coffee);width:56px;}
+  table.menu-table input[type=text]{width:100%;font-family:'Nunito Sans',sans-serif;font-weight:700;color:var(--olive-deep);
+    border:1.5px solid var(--line);border-radius:7px;padding:6px 8px;}
+  table.menu-table input[type=number]{width:90px;font-family:'Nunito Sans',sans-serif;font-weight:700;color:var(--olive-deep);
+    border:1.5px solid var(--line);border-radius:7px;padding:6px 8px;text-align:right;}
+  .menu-del-btn{border:none;background:none;cursor:pointer;font-size:15px;}
+  .menu-actions-row{margin-top:10px;}
+
+  footer{text-align:center;color:#9aa590;font-size:12px;margin-top:44px;}
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH / LOGIN SCREEN ============ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h2>Little Food Corner</h2>
+    <p class="sub">Đăng nhập để vào trang quản lý</p>
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" id="login-email" autocomplete="username" required>
+      <label>Mật khẩu</label>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+      <button class="primary-btn" type="submit" id="login-btn">Đăng nhập</button>
+      <div class="auth-error" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app-root">
+
+<header>
+  <div class="wrap top">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 42 42" fill="none">
+        <circle cx="21" cy="21" r="21" fill="#2C4224"/>
+        <path d="M13 11v9a3 3 0 0 0 3 3v8" stroke="#FBF7EC" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13 11v6M16 11v6" stroke="#FBF7EC" stroke-width="2" stroke-linecap="round"/>
+        <path d="M27 11c-2 0-3 2-3 5s1 5 3 5v10" stroke="#FBF7EC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div><h1>Little Food Corner</h1><p>Quản lý Vốn · Doanh thu · Chi phí · Chia lợi nhuận</p></div>
+    </div>
+    <div class="head-actions">
+      <button class="ghost-btn" data-owner-only onclick="exportData()">⬇ Xuất dữ liệu (JSON)</button>
+      <button class="ghost-btn" data-owner-only onclick="document.getElementById('importFile').click()">⬆ Nhập dữ liệu (JSON)</button>
+      <input type="file" id="importFile" accept=".json">
+      <div class="user-badge">
+        <span id="user-email"></span>
+        <span class="role-pill" id="user-role-pill"></span>
+        <button onclick="handleLogout()">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <nav>
+      <button data-page="entry" class="active">Nhập liệu hằng ngày</button>
+      <button data-page="dashboard" data-owner-only>Dashboard</button>
+      <button data-page="base" data-owner-only>Dữ liệu nền</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ PAGE 1: NHẬP LIỆU HẰNG NGÀY ============ -->
+  <div class="page active" id="page-entry">
+    <div class="section-label">Ngày nhập</div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field"><label>Ngày</label><input type="date" id="f-date"></div>
+      </div>
+    </div>
+
+    <div class="section-label">Số lượng đã bán <span class="hint">— lấy danh mục từ trang "Dữ liệu nền", tự nhân giá ra doanh thu</span></div>
+    <div class="card">
+      <div id="items-sales-wrap"></div>
+    </div>
+
+    <div class="section-label">Doanh thu khác <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field"><label>Doanh thu khách qua app</label><input type="number" id="f-revenueApp" step="1" value="0"></div>
+        <div class="field"><label>Doanh thu khách doanh nghiệp</label><input type="number" id="f-revenueDoanhNghiep" step="1" value="0"></div>
+        <div class="field"><label>Doanh thu khác (bạn bè, đồng nghiệp...)</label><input type="number" id="f-revenueKhac" step="1" value="0"></div>
+      </div>
+      <div class="live-preview">
+        <div class="item"><div class="l">Doanh thu tại quán (từ món bán)</div><div class="v" id="lp-itemrev">–</div></div>
+        <div class="item"><div class="l">Tổng doanh thu ngày</div><div class="v" id="lp-totalrev">–</div></div>
+        <div class="item"><div class="l">Doanh thu dự kiến ngày</div><div class="v" id="lp-plan">–</div></div>
+        <div class="item"><div class="l">Runrate (thực/dự kiến)</div><div class="v" id="lp-runrate">–</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">Chi phí <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="card cost-card">
+      <div class="form-grid">
+        <div class="field"><label>CP nguyên vật liệu</label><input type="number" id="f-nguyenVatLieu" step="1" value="0"></div>
+        <div class="field"><label>CP nhân sự</label><input type="number" id="f-nhanSu" step="1" value="0"></div>
+        <div class="field"><label>CP điện, nước</label><input type="number" id="f-dienNuoc" step="1" value="0"></div>
+        <div class="field"><label>CP vận hành khác</label><input type="number" id="f-vanHanhKhac" step="1" value="0"></div>
+        <div class="field"><label>CP khác (tự thêm)</label><input type="number" id="f-khac" step="1" value="0"></div>
+      </div>
+      <div class="live-preview">
+        <div class="item"><div class="l">CP thuê mặt bằng (tự tính)</div><div class="v" id="lp-rent">–</div></div>
+        <div class="item"><div class="l">Tổng chi phí</div><div class="v" id="lp-cost">–</div></div>
+        <div class="item profit"><div class="l">Lợi nhuận ngày</div><div class="v" id="lp-profit">–</div></div>
+      </div>
+    </div>
+
+    <button class="primary-btn" onclick="saveEntry()" id="save-entry-btn">Lưu ngày này</button>
+    <button class="cancel-link" onclick="resetEntryForm()" id="cancel-edit-btn" style="display:none;">Hủy sửa</button>
+
+    <div class="section-label">Lịch sử đã nhập <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Ngày</th><th>Doanh thu</th><th>Tổng CP</th><th>Lợi nhuận</th><th>Runrate</th><th></th></tr></thead>
+        <tbody id="entry-history"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ PAGE 2: DASHBOARD ============ -->
+  <div class="page" id="page-dashboard">
+    <div class="section-label">Chọn kỳ xem</div>
+    <div class="picker-bar">
+      <div class="picker-field"><label>Ngày</label><input type="date" id="pickDay"></div>
+      <div class="picker-field"><label>Tháng</label><input type="month" id="pickMonth"></div>
+      <div class="picker-field"><label>Năm</label><input type="number" id="pickYear" style="width:90px;"></div>
+    </div>
+
+    <div class="section-label">Runrate doanh thu <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">Runrate Ngày</div><div class="value" id="d-runrate">–</div></div>
+      <div class="kpi"><div class="label">Runrate Tháng</div><div class="value" id="m-runrate">–</div></div>
+      <div class="kpi"><div class="label">Runrate Năm</div><div class="value" id="y-runrate">–</div></div>
+    </div>
+
+    <div class="section-label">Thực tế vs. Kế hoạch <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="metric-grid">
+      <div class="chart-card"><h3>Doanh thu</h3><canvas id="revChart" height="200"></canvas></div>
+      <div class="chart-card"><h3>Chi phí</h3><canvas id="costChart" height="200"></canvas></div>
+      <div class="chart-card"><h3>Lợi nhuận</h3><canvas id="profitChart" height="200"></canvas></div>
+    </div>
+
+    <div class="section-label">Tiến độ hoàn vốn (tính đến tháng gần nhất có dữ liệu) <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="cup-panel">
+      <div class="cup-wrap">
+        <svg width="120" height="150" viewBox="0 0 120 150">
+          <defs><clipPath id="cupClip"><path d="M22 20 h76 l-10 108 a10 10 0 0 1-10 9 H42 a10 10 0 0 1-10-9 Z"/></clipPath></defs>
+          <path d="M22 20 h76 l-10 108 a10 10 0 0 1-10 9 H42 a10 10 0 0 1-10-9 Z" fill="#F7F4E9" stroke="#3F5C33" stroke-width="3"/>
+          <g clip-path="url(#cupClip)"><rect id="cup-liquid" x="10" y="150" width="100" height="0" fill="#E3A93B"/></g>
+          <path d="M22 20 h76 l-10 108 a10 10 0 0 1-10 9 H42 a10 10 0 0 1-10-9 Z" fill="none" stroke="#3F5C33" stroke-width="3"/>
+          <path d="M96 34c14-2 20 8 18 18-2 11-14 16-24 13" fill="none" stroke="#3F5C33" stroke-width="3" stroke-linecap="round"/>
+          <line x1="16" y1="20" x2="104" y2="20" stroke="#3F5C33" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cup-copy">
+        <p class="headline">Quán đã "rót đầy ly vốn" tới đâu?</p>
+        <p>Lợi nhuận dùng để hoàn quỹ vốn chung trước. Ly đầy (100%) nghĩa là đã hoàn đủ vốn — từ đó lợi nhuận mới được chia cho Hoàng/Tài.</p>
+        <span class="pct" id="cup-pct">0%</span>
+        <p id="cup-detail" style="margin-top:6px;"></p>
+      </div>
+    </div>
+
+    <div class="section-label">Doanh thu &amp; chi phí theo tháng · Lợi nhuận chia <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="split-grid">
+      <div class="chart-card"><h3>Doanh thu vs. Chi phí theo tháng</h3><canvas id="revCostChart" height="220"></canvas></div>
+      <div class="chart-card">
+        <h3>Chia lợi nhuận: Hoàng &amp; Tài (tháng đã chọn)</h3>
+        <canvas id="splitChart" height="220"></canvas>
+        <p style="text-align:center;font-size:12.5px;color:#7c8a72;margin-top:10px;">
+          <span class="legend-dot" style="background:var(--hoang);"></span>Hoàng
+          &nbsp;&nbsp;<span class="legend-dot" style="background:var(--tai);"></span>Tài
+        </p>
+        <p style="text-align:center;font-size:12.5px;color:#7c8a72;" id="split-scope"></p>
+      </div>
+    </div>
+
+    <div class="section-label">Chi tiết theo tháng <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Tháng</th><th>Doanh thu</th><th>Chi phí</th><th>Lợi nhuận</th><th>LN lũy kế</th><th>LN chia tháng</th><th>Chia Hoàng</th><th>Chia Tài</th></tr></thead>
+        <tbody id="monthlyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ PAGE 3: DỮ LIỆU NỀN ============ -->
+  <div class="page" id="page-base">
+    <div class="section-label">Vốn ban đầu <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="card">
+      <p style="font-size:13px;color:#5c6b53;margin-top:0;">Vốn ban đầu là số cố định, không cần chỉnh sửa — chỉ hiển thị tổng để đối chiếu.</p>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">Tổng vốn Hoàng đã góp</div><div class="value" id="cap-hoang-total">–</div></div>
+        <div class="kpi"><div class="label">Tổng vốn Tài đã góp</div><div class="value" id="cap-tai-total">–</div></div>
+        <div class="kpi"><div class="label">Tổng quỹ vốn chung</div><div class="value" id="pool-total">–</div></div>
+      </div>
+      <div class="ratio-row">
+        <div class="field"><label>Tỉ lệ chia lợi nhuận — Hoàng</label><input type="number" id="ratio-hoang" min="0" max="100" step="1"></div>
+        <div class="field"><label>Tỉ lệ chia lợi nhuận — Tài</label><input type="number" id="ratio-tai" disabled></div>
+      </div>
+      <button class="primary-btn" onclick="saveCapital()">Lưu tỉ lệ chia lợi nhuận</button>
+      <p class="save-hint">Đổi tỉ lệ Hoàng, số Tài tự cập nhật — áp dụng ngay cho toàn bộ Dashboard.</p>
+    </div>
+
+    <div class="section-label">Ngân sách dự kiến hằng tháng <span class="hint">— đơn vị: nghìn đồng</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field"><label>Doanh thu dự kiến / tháng</label><input type="number" id="b-revenue" step="100"></div>
+        <div class="field"><label>CP thuê mặt bằng</label><input type="number" id="b-thueMatBang" step="100"></div>
+        <div class="field"><label>CP nguyên vật liệu</label><input type="number" id="b-nguyenVatLieu" step="100"></div>
+        <div class="field"><label>CP nhân sự</label><input type="number" id="b-nhanSu" step="100"></div>
+        <div class="field"><label>CP điện, nước</label><input type="number" id="b-dienNuoc" step="100"></div>
+        <div class="field"><label>CP vận hành khác</label><input type="number" id="b-vanHanhKhac" step="100"></div>
+        <div class="field"><label>CP khác</label><input type="number" id="b-khac" step="100"></div>
+      </div>
+      <div class="live-preview">
+        <div class="item"><div class="l">Tổng CP dự kiến / tháng</div><div class="v" id="b-cost-total">–</div></div>
+        <div class="item profit"><div class="l">Lợi nhuận dự kiến / tháng</div><div class="v" id="b-profit">–</div></div>
+      </div>
+      <button class="primary-btn" onclick="saveBudget()">Lưu ngân sách dự kiến</button>
+      <p class="save-hint">Số này dùng làm mốc so sánh "Kế hoạch" ở Dashboard và tính Doanh thu/CP dự kiến mỗi ngày (chia đều /30).</p>
+    </div>
+
+    <div class="section-label">Danh mục menu <span class="hint">— giá tính theo nghìn đồng</span></div>
+    <div class="card">
+      <div class="item-group-title">Món nước (N)</div>
+      <table class="menu-table">
+        <thead><tr><th>Code</th><th>Tên món</th><th style="text-align:right;">Giá (nghìn đ)</th><th></th></tr></thead>
+        <tbody id="menu-nuoc-rows"></tbody>
+      </table>
+      <div class="menu-actions-row"><button class="secondary-btn" onclick="addMenuItem('nuoc')">+ Thêm món nước</button></div>
+
+      <div class="item-group-title">Món bánh (B)</div>
+      <table class="menu-table">
+        <thead><tr><th>Code</th><th>Tên món</th><th style="text-align:right;">Giá (nghìn đ)</th><th></th></tr></thead>
+        <tbody id="menu-banh-rows"></tbody>
+      </table>
+      <div class="menu-actions-row"><button class="secondary-btn" onclick="addMenuItem('banh')">+ Thêm món bánh</button></div>
+
+      <button class="primary-btn" onclick="saveMenu()">Lưu danh mục menu</button>
+      <p class="save-hint">Đang là template — điền tên món &amp; giá, hoặc thêm/xóa dòng tùy ý. Danh mục này sẽ hiện ra ở trang "Nhập liệu hằng ngày" (chỉ món đã có tên).</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+</div><!-- /#app-root -->
+
+<script>
+/* =========================================================
+   SUPABASE CONFIG — điền URL & anon key của project sau khi tạo
+   ========================================================= */
+const SUPABASE_URL = 'https://nealrhruaskinugvfbcr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lYWxyaHJ1YXNraW51Z3ZmYmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Nzk1NjMsImV4cCI6MjEwMjI1NTU2M30.Hw7cJoDrwvmBVPttJ8ACWH22HxDr45Enhh_2RbZIkbw';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;   // { id, email }
+let currentRole = null;   // 'owner' | 'staff'
+
+/* =========================================================
+   DATA MODEL  (đồng bộ hai chiều với Supabase)
+   ========================================================= */
+const COST_KEYS = ['nguyenVatLieu','nhanSu','dienNuoc','vanHanhKhac','khac'];
+
+function daysInMonth(dateStr){
+  const [y,m] = dateStr.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+function rentForDate(dateStr){
+  if(!dateStr) return 0;
+  return appData.budget.costs.thueMatBang / daysInMonth(dateStr);
+}
+
+function buildDefaultMenu(){
+  const items = [];
+  for(let i=1;i<=20;i++) items.push({code:`N${String(i).padStart(2,'0')}`, name:'', price:0, image:null, category:'nuoc'});
+  for(let i=1;i<=20;i++) items.push({code:`B${String(i).padStart(2,'0')}`, name:'', price:0, image:null, category:'banh'});
+  return items;
+}
+
+let appData = {
+  capital: {
+    hoang: {dauTuQuanHienTai:25000, sangQuan:40000, cocNha:28000, tienNhaThang8:14000, vonVanHanhThang8:0},
+    tai:   {dauTuQuanHienTai:25000, sangQuan:0,      cocNha:0,    tienNhaThang8:0,      vonVanHanhThang8:8000}
+  },
+  ratioHoang: 0.6,
+  budget: {
+    revenue: 50000,
+    costs: {thueMatBang:6500, nguyenVatLieu:15000, nhanSu:20000, dienNuoc:2500, vanHanhKhac:2000, khac:0}
+  },
+  menu: buildDefaultMenu(),
+  entries: [] // {date, itemSales:[{code,name,price,qty}], revenueApp, revenueDoanhNghiep, revenueKhac, costs:{...}}
+};
+
+let editingDate = null;
+let lastMenuSignature = null;
+
+/* =========================================================
+   AUTH
+   ========================================================= */
+async function handleLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.classList.remove('show');
+  if(!email || !password) return;
+  btn.disabled = true; btn.textContent = 'Đang đăng nhập...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Đăng nhập';
+  if(error){
+    errEl.textContent = 'Sai email hoặc mật khẩu.';
+    errEl.classList.add('show');
+    return;
+  }
+  await onSignedIn(data.user);
+}
+
+async function handleLogout(){
+  await sb.auth.signOut();
+  currentUser = null; currentRole = null;
+  document.getElementById('app-root').classList.remove('ready');
+  document.body.classList.remove('role-owner','role-staff');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+async function fetchRole(userId){
+  const { data, error } = await sb.from('profiles').select('role').eq('id', userId).single();
+  if(error || !data) return 'staff'; // an toàn: mặc định quyền thấp nhất nếu chưa có hồ sơ
+  return data.role === 'owner' ? 'owner' : 'staff';
+}
+
+async function onSignedIn(user){
+  currentUser = user;
+  currentRole = await fetchRole(user.id);
+
+  document.body.classList.remove('role-owner','role-staff');
+  document.body.classList.add(currentRole === 'owner' ? 'role-owner' : 'role-staff');
+  document.getElementById('user-email').textContent = user.email;
+  document.getElementById('user-role-pill').textContent = currentRole === 'owner' ? 'Owner' : 'Nhân viên';
+
+  // Nếu nhân viên đang đứng ở trang "Dữ liệu nền" (không nên xảy ra vì nút đã ẩn) → đưa về trang nhập liệu
+  if(currentRole !== 'owner'){
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelector('nav button[data-page="entry"]').classList.add('active');
+    document.getElementById('page-entry').classList.add('active');
+  }
+
+  await loadAllData();
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app-root').classList.add('ready');
+
+  renderItemSalesRows();
+  resetEntryForm();
+  renderEntryHistory();
+  if(currentRole === 'owner') renderBase();
+}
+
+/* =========================================================
+   SUPABASE DATA LOAD / SAVE
+   ========================================================= */
+async function loadAllData(){
+  const [settingsRes, menuRes, entriesRes] = await Promise.all([
+    sb.from('settings').select('*').eq('id', 1).single(),
+    sb.from('menu_items').select('*').order('code'),
+    sb.from('daily_entries').select('*').order('date')
+  ]);
+
+  if(settingsRes.data){
+    const s = settingsRes.data;
+    appData.capital.hoang = s.capital_hoang || appData.capital.hoang;
+    appData.capital.tai = s.capital_tai || appData.capital.tai;
+    appData.ratioHoang = s.ratio_hoang ?? appData.ratioHoang;
+    appData.budget.revenue = s.budget_revenue ?? appData.budget.revenue;
+    appData.budget.costs = s.budget_costs || appData.budget.costs;
+  } else if(settingsRes.error){
+    toast('Không tải được cài đặt — kiểm tra kết nối Supabase');
+  }
+
+  if(menuRes.data && menuRes.data.length){
+    appData.menu = menuRes.data.map(r => ({
+      code: r.code, name: r.name || '', price: r.price || 0, image: r.image || null, category: r.category
+    }));
+  }
+
+  if(entriesRes.data){
+    appData.entries = entriesRes.data.map(r => ({
+      date: r.date,
+      itemSales: r.item_sales || [],
+      revenueApp: r.revenue_app || 0,
+      revenueDoanhNghiep: r.revenue_doanh_nghiep || 0,
+      revenueKhac: r.revenue_khac || 0,
+      costs: r.costs || {}
+    }));
+  }
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const fmt = n => (n===null||n===undefined||isNaN(n)) ? '–' : Math.round(n).toLocaleString('vi-VN');
+const fmtK = n => (n===null||n===undefined||isNaN(n)) ? '–' : Math.round(n).toLocaleString('vi-VN') + 'k';
+const fmtPct = n => (n===null||n===undefined||isNaN(n)) ? '–' : (n*100).toFixed(1) + '%';
+const fmtMonthLabel = ym => { const [y,m]=ym.split('-'); return `${m}/${y}`; };
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function capitalTotal(who){ return Object.values(appData.capital[who]).reduce((s,v)=>s+(v||0),0); }
+function capitalPool(){ return capitalTotal('hoang') + capitalTotal('tai'); }
+function ratioTai(){ return 1 - appData.ratioHoang; }
+function budgetCostTotal(){ return Object.values(appData.budget.costs).reduce((s,v)=>s+(v||0),0); }
+
+function entryItemRevenue(e){
+  return (e.itemSales||[]).reduce((s,it)=>s+(it.qty||0)*(it.price||0),0); // đơn vị: nghìn đồng
+}
+function entryRevenue(e){
+  return entryItemRevenue(e) + (e.revenueApp||0) + (e.revenueDoanhNghiep||0) + (e.revenueKhac||0);
+}
+function entryCostTotal(e){ return rentForDate(e.date) + COST_KEYS.reduce((s,k)=>s+((e.costs&&e.costs[k])||0),0); }
+function entryProfit(e){ return entryRevenue(e) - entryCostTotal(e); }
+
+function getMonthlyAggregates(){
+  const byMonth = {};
+  appData.entries.forEach(e => {
+    const ym = e.date.slice(0,7);
+    if(!byMonth[ym]) byMonth[ym] = {ym, revenue:0, cost:0};
+    byMonth[ym].revenue += entryRevenue(e);
+    byMonth[ym].cost += entryCostTotal(e);
+  });
+  const months = Object.values(byMonth).sort((a,b)=>a.ym.localeCompare(b.ym));
+  const pool = capitalPool();
+  let prevCum = 0;
+  months.forEach(m => {
+    m.profit = m.revenue - m.cost;
+    const preReset = prevCum + m.profit;
+    m.cum = Math.min(pool, preReset);
+    m.distrib = Math.max(0, preReset - pool);
+    m.hoang = m.distrib * appData.ratioHoang;
+    m.tai = m.distrib * ratioTai();
+    prevCum = m.cum;
+  });
+  return months;
+}
+
+function getYearlyAggregates(){
+  const months = getMonthlyAggregates();
+  const byYear = {};
+  months.forEach(m => {
+    const y = m.ym.slice(0,4);
+    if(!byYear[y]) byYear[y] = {year:y, revenue:0, cost:0, profit:0, hoang:0, tai:0};
+    byYear[y].revenue += m.revenue; byYear[y].cost += m.cost; byYear[y].profit += m.profit;
+    byYear[y].hoang += m.hoang; byYear[y].tai += m.tai;
+  });
+  return Object.values(byYear).sort((a,b)=>a.year.localeCompare(b.year));
+}
+
+/* =========================================================
+   NAV
+   ========================================================= */
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(btn.dataset.page === 'base' && currentRole !== 'owner') return; // chỉ Owner mới vào được Dữ liệu nền
+    if(btn.dataset.page === 'dashboard' && currentRole !== 'owner') return; // chỉ Owner mới vào được Dashboard
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-'+btn.dataset.page).classList.add('active');
+    if(btn.dataset.page==='dashboard') renderDashboard();
+    if(btn.dataset.page==='base') renderBase();
+    if(btn.dataset.page==='entry') maybeRefreshItemRows();
+  });
+});
+
+/* =========================================================
+   PAGE 1: NHẬP LIỆU HẰNG NGÀY
+   ========================================================= */
+function activeMenuItems(){
+  return appData.menu.filter(it => (it.name||'').trim() !== '');
+}
+function menuSignature(){
+  return JSON.stringify(activeMenuItems().map(it=>[it.code,it.name,it.price]));
+}
+
+function renderItemSalesRows(){
+  const wrap = document.getElementById('items-sales-wrap');
+  const items = activeMenuItems();
+  lastMenuSignature = menuSignature();
+  if(!items.length){
+    wrap.innerHTML = `<p class="empty-note">Chưa có món nào trong danh mục — sang tab "Dữ liệu nền" để thêm tên món &amp; giá trước.</p>`;
+    return;
+  }
+  const groups = [['nuoc','Món nước'], ['banh','Món bánh']];
+  let html = '';
+  groups.forEach(([cat,label]) => {
+    const rows = items.filter(it=>it.category===cat);
+    if(!rows.length) return;
+    html += `<div class="item-group-title">${label}</div><div class="item-cards-grid">`;
+    rows.forEach(it => {
+      html += `<div class="item-card" id="card-${it.code}">
+        <div class="item-card-body">
+          <div class="item-card-name">${it.code} - ${it.name}</div>
+          <div class="item-card-price">${it.price.toLocaleString('vi-VN')}k / món</div>
+          <div class="item-card-sub" id="subtotal-${it.code}">0k</div>
+        </div>
+        <div class="qty-stepper">
+          <button type="button" onclick="stepQty('${it.code}',-1)">−</button>
+          <input type="number" min="0" step="1" value="0" id="qty-${it.code}" data-code="${it.code}" oninput="updateLivePreview()">
+          <button type="button" onclick="stepQty('${it.code}',1)">+</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `<div class="items-sales-total"><span class="l">Doanh thu tại quán</span><span class="v" id="items-sales-total-k">0k</span></div>`;
+  wrap.innerHTML = html;
+}
+
+function stepQty(code, delta){
+  const el = document.getElementById('qty-'+code);
+  if(!el) return;
+  const next = Math.max(0, (parseFloat(el.value)||0) + delta);
+  el.value = next;
+  updateLivePreview();
+}
+
+function maybeRefreshItemRows(){
+  if(menuSignature() !== lastMenuSignature) renderItemSalesRows();
+}
+
+function collectItemSales(){
+  return activeMenuItems().map(it => {
+    const qtyEl = document.getElementById('qty-'+it.code);
+    const qty = qtyEl ? (parseFloat(qtyEl.value)||0) : 0;
+    return {code:it.code, name:it.name, price:it.price, qty};
+  }).filter(it => it.qty > 0);
+}
+
+function entryFormValues(){
+  return {
+    date: document.getElementById('f-date').value,
+    itemSales: collectItemSales(),
+    revenueApp: parseFloat(document.getElementById('f-revenueApp').value)||0,
+    revenueDoanhNghiep: parseFloat(document.getElementById('f-revenueDoanhNghiep').value)||0,
+    revenueKhac: parseFloat(document.getElementById('f-revenueKhac').value)||0,
+    costs: Object.fromEntries(COST_KEYS.map(k => [k, parseFloat(document.getElementById('f-'+k).value)||0]))
+  };
+}
+
+function updateLivePreview(){
+  // update per-item subtotal cells — thành tiền = số lượng x giá, cùng đơn vị nghìn đồng với cột Giá
+  let totalK = 0;
+  activeMenuItems().forEach(it => {
+    const qtyEl = document.getElementById('qty-'+it.code);
+    const subEl = document.getElementById('subtotal-'+it.code);
+    const cardEl = document.getElementById('card-'+it.code);
+    if(!qtyEl || !subEl) return;
+    const qty = parseFloat(qtyEl.value)||0;
+    const subK = qty * it.price;
+    subEl.textContent = fmtK(subK);
+    if(cardEl) cardEl.classList.toggle('has-qty', qty > 0);
+    totalK += subK;
+  });
+  const totalKEl = document.getElementById('items-sales-total-k');
+  if(totalKEl) totalKEl.textContent = fmtK(totalK);
+
+  const v = entryFormValues();
+  const itemRev = entryItemRevenue(v);
+  const totalRev = entryRevenue(v);
+  const planRev = appData.budget.revenue/30;
+  const rent = rentForDate(v.date || todayStr());
+  const cost = rent + COST_KEYS.reduce((s,k)=>s+(v.costs[k]||0),0);
+  const profit = totalRev - cost;
+
+  document.getElementById('lp-itemrev').textContent = fmt(itemRev);
+  document.getElementById('lp-totalrev').textContent = fmt(totalRev);
+  document.getElementById('lp-plan').textContent = fmt(planRev);
+  document.getElementById('lp-runrate').textContent = fmtPct(planRev ? totalRev/planRev : 0);
+  document.getElementById('lp-rent').textContent = fmt(rent);
+  document.getElementById('lp-cost').textContent = fmt(cost);
+  const profitEl = document.getElementById('lp-profit');
+  profitEl.textContent = fmt(profit);
+  profitEl.classList.toggle('neg', profit < 0);
+}
+['f-date','f-revenueApp','f-revenueDoanhNghiep','f-revenueKhac', ...COST_KEYS.map(k=>'f-'+k)].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateLivePreview);
+});
+
+async function saveEntry(){
+  const v = entryFormValues();
+  if(!v.date){ toast('Chọn ngày trước đã nhé'); return; }
+  const btn = document.getElementById('save-entry-btn');
+  const wasEditing = appData.entries.some(e => e.date === v.date);
+  btn.disabled = true;
+  const { error } = await sb.from('daily_entries').upsert({
+    date: v.date,
+    item_sales: v.itemSales,
+    revenue_app: v.revenueApp,
+    revenue_doanh_nghiep: v.revenueDoanhNghiep,
+    revenue_khac: v.revenueKhac,
+    costs: v.costs,
+    created_by: currentUser ? currentUser.id : null
+  }, { onConflict: 'date' });
+  btn.disabled = false;
+  if(error){ toast('Lỗi khi lưu — thử lại nhé'); console.error(error); return; }
+
+  const idx = appData.entries.findIndex(e => e.date === v.date);
+  if(idx >= 0) appData.entries[idx] = v; else appData.entries.push(v);
+  appData.entries.sort((a,b)=>a.date.localeCompare(b.date));
+  toast(wasEditing ? `Đã cập nhật ngày ${v.date}` : `Đã lưu ngày ${v.date}`);
+  resetEntryForm();
+  renderEntryHistory();
+}
+
+function resetEntryForm(){
+  editingDate = null;
+  document.getElementById('f-date').value = todayStr();
+  ['f-revenueApp','f-revenueDoanhNghiep','f-revenueKhac',...COST_KEYS.map(k=>'f-'+k)].forEach(id => document.getElementById(id).value = 0);
+  maybeRefreshItemRows();
+  activeMenuItems().forEach(it => { const el = document.getElementById('qty-'+it.code); if(el) el.value = 0; });
+  document.getElementById('save-entry-btn').textContent = 'Lưu ngày này';
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  updateLivePreview();
+}
+
+function editEntry(date){
+  const e = appData.entries.find(e=>e.date===date);
+  if(!e) return;
+  editingDate = date;
+  document.getElementById('f-date').value = e.date;
+  document.getElementById('f-revenueApp').value = e.revenueApp||0;
+  document.getElementById('f-revenueDoanhNghiep').value = e.revenueDoanhNghiep||0;
+  document.getElementById('f-revenueKhac').value = e.revenueKhac||0;
+  COST_KEYS.forEach(k => document.getElementById('f-'+k).value = (e.costs&&e.costs[k])||0);
+  maybeRefreshItemRows();
+  activeMenuItems().forEach(it => { const el = document.getElementById('qty-'+it.code); if(el) el.value = 0; });
+  (e.itemSales||[]).forEach(it => { const el = document.getElementById('qty-'+it.code); if(el) el.value = it.qty; });
+  document.getElementById('save-entry-btn').textContent = 'Cập nhật ngày này';
+  document.getElementById('cancel-edit-btn').style.display = 'inline';
+  updateLivePreview();
+  document.getElementById('page-entry').scrollIntoView({behavior:'smooth'});
+}
+
+async function deleteEntry(date){
+  if(currentRole !== 'owner'){ toast('Chỉ Owner mới được xóa dữ liệu ngày'); return; }
+  if(!confirm(`Xóa dữ liệu ngày ${date}?`)) return;
+  const { error } = await sb.from('daily_entries').delete().eq('date', date);
+  if(error){ toast('Lỗi khi xóa — thử lại nhé'); console.error(error); return; }
+  appData.entries = appData.entries.filter(e=>e.date!==date);
+  renderEntryHistory();
+  toast('Đã xóa');
+}
+
+function renderEntryHistory(){
+  const tbody = document.getElementById('entry-history');
+  const rows = [...appData.entries].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Chưa có ngày nào được nhập — điền form ở trên rồi bấm "Lưu ngày này".</td></tr>`;
+    return;
+  }
+  const planRev = appData.budget.revenue/30;
+  tbody.innerHTML = rows.map(e => {
+    const rev = entryRevenue(e);
+    const cost = entryCostTotal(e);
+    const profit = rev - cost;
+    const runrate = planRev ? rev/planRev : 0;
+    return `<tr onclick="editEntry('${e.date}')">
+      <td>${e.date.split('-').reverse().join('/')}</td>
+      <td>${fmt(rev)}</td><td>${fmt(cost)}</td>
+      <td class="${profit<0?'neg':''}">${fmt(profit)}</td><td>${fmtPct(runrate)}</td>
+      <td class="row-actions" onclick="event.stopPropagation()">
+        <button title="Sửa" onclick="editEntry('${e.date}')">✏️</button>
+        ${currentRole==='owner' ? `<button title="Xóa" onclick="deleteEntry('${e.date}')">🗑️</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* =========================================================
+   PAGE 2: DASHBOARD
+   ========================================================= */
+let revCostChart, splitChart, revChart, costChart, profitChart;
+
+function renderDashboard(){
+  const months = getMonthlyAggregates();
+  const years = getYearlyAggregates();
+
+  if(!document.getElementById('pickDay').value) document.getElementById('pickDay').value = todayStr();
+  if(!document.getElementById('pickMonth').value) document.getElementById('pickMonth').value = todayStr().slice(0,7);
+  if(!document.getElementById('pickYear').value) document.getElementById('pickYear').value = new Date().getFullYear();
+
+  recomputeDashboard(months, years);
+}
+
+function makeCompareChart(existing, canvasId, actual, plan){
+  if(existing) existing.destroy();
+  return new Chart(document.getElementById(canvasId), {
+    type:'bar',
+    data:{ labels:['Ngày','Tháng','Năm'], datasets:[
+      {label:'Thực tế', data:actual, backgroundColor:'#3F5C33', borderRadius:6},
+      {label:'Kế hoạch', data:plan, backgroundColor:'#E3A93B', borderRadius:6}
+    ]},
+    options:{responsive:true, plugins:{legend:{position:'bottom'}}, scales:{y:{ticks:{callback:v=>v.toLocaleString('vi-VN')}}}}
+  });
+}
+
+function recomputeDashboard(months, years){
+  months = months || getMonthlyAggregates();
+  years = years || getYearlyAggregates();
+
+  const dayVal = document.getElementById('pickDay').value || todayStr();
+  const monthVal = document.getElementById('pickMonth').value || todayStr().slice(0,7);
+  const yearVal = document.getElementById('pickYear').value || new Date().getFullYear();
+
+  const dayEntry = appData.entries.find(e => e.date === dayVal);
+  const dRevA = dayEntry ? entryRevenue(dayEntry) : 0;
+  const dCostA = dayEntry ? entryCostTotal(dayEntry) : 0;
+  const dRevP = appData.budget.revenue/30, dCostP = budgetCostTotal()/30;
+
+  const monthRow = months.find(m => m.ym === monthVal);
+  const mRevA = monthRow ? monthRow.revenue : 0, mCostA = monthRow ? monthRow.cost : 0;
+  const mRevP = appData.budget.revenue, mCostP = budgetCostTotal();
+
+  const yearRow = years.find(y => y.year === String(yearVal));
+  const yRevA = yearRow ? yearRow.revenue : 0, yCostA = yearRow ? yearRow.cost : 0;
+  const yRevP = appData.budget.revenue*12, yCostP = budgetCostTotal()*12;
+
+  document.getElementById('d-runrate').textContent = fmtPct(dRevP? dRevA/dRevP : 0);
+  document.getElementById('m-runrate').textContent = fmtPct(mRevP? mRevA/mRevP : 0);
+  document.getElementById('y-runrate').textContent = fmtPct(yRevP? yRevA/yRevP : 0);
+
+  revChart = makeCompareChart(revChart, 'revChart', [dRevA,mRevA,yRevA], [dRevP,mRevP,yRevP]);
+  costChart = makeCompareChart(costChart, 'costChart', [dCostA,mCostA,yCostA], [dCostP,mCostP,yCostP]);
+  profitChart = makeCompareChart(profitChart, 'profitChart',
+    [dRevA-dCostA, mRevA-mCostA, yRevA-yCostA], [dRevP-dCostP, mRevP-mCostP, yRevP-yCostP]);
+
+  // Cup: capital payback progress from latest month with data
+  const pool = capitalPool();
+  const lastMonth = months[months.length-1];
+  const pct = lastMonth && pool ? Math.max(0, Math.min(1, lastMonth.cum/pool)) : 0;
+  document.getElementById('cup-pct').textContent = (pct*100).toFixed(1)+'%';
+  const cupTop=20, cupBottom=137, cupH=cupBottom-cupTop;
+  const liquidH = cupH*pct;
+  const liquid = document.getElementById('cup-liquid');
+  liquid.setAttribute('y', cupBottom-liquidH);
+  liquid.setAttribute('height', liquidH);
+  document.getElementById('cup-detail').textContent = lastMonth
+    ? `Đã dùng ${fmt(lastMonth.cum)} / ${fmt(pool)} lợi nhuận để hoàn vốn.` + (lastMonth.distrib>0 ? ` Tháng gần nhất đã chia ${fmt(lastMonth.distrib)}.` : '')
+    : 'Chưa có số liệu thực tế.';
+
+  const labels = months.map(m => fmtMonthLabel(m.ym));
+  if(revCostChart) revCostChart.destroy();
+  revCostChart = new Chart(document.getElementById('revCostChart'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Doanh thu', data:months.map(m=>m.revenue), backgroundColor:'#3F5C33', borderRadius:6},
+      {label:'Chi phí', data:months.map(m=>m.cost), backgroundColor:'#E3A93B', borderRadius:6}
+    ]},
+    options:{responsive:true, plugins:{legend:{position:'bottom'}}, scales:{y:{ticks:{callback:v=>v.toLocaleString('vi-VN')}}}}
+  });
+
+  const mHoang = monthRow ? monthRow.hoang : 0, mTai = monthRow ? monthRow.tai : 0;
+  if(splitChart) splitChart.destroy();
+  splitChart = new Chart(document.getElementById('splitChart'), {
+    type:'doughnut',
+    data:{ labels:['Hoàng','Tài'], datasets:[{data:[mHoang||0.0001, mTai||0.0001], backgroundColor:['#3F5C33','#E3A93B'], borderWidth:0}]},
+    options:{responsive:true, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmt(ctx.raw)}}}}
+  });
+  const yHoang = yearRow?yearRow.hoang:0, yTai = yearRow?yearRow.tai:0;
+  const lifeHoang = months.reduce((s,m)=>s+m.hoang,0), lifeTai = months.reduce((s,m)=>s+m.tai,0);
+  document.getElementById('split-scope').textContent =
+    `Tháng ${fmtMonthLabel(monthVal)}: Hoàng ${fmt(mHoang)} · Tài ${fmt(mTai)}  ·  Năm ${yearVal}: Hoàng ${fmt(yHoang)} · Tài ${fmt(yTai)}  ·  Từ đầu: Hoàng ${fmt(lifeHoang)} · Tài ${fmt(lifeTai)}`;
+
+  const tbody = document.getElementById('monthlyBody');
+  tbody.innerHTML = months.length ? months.map(m => `
+    <tr><td>${fmtMonthLabel(m.ym)}</td><td>${fmt(m.revenue)}</td><td>${fmt(m.cost)}</td>
+      <td class="${m.profit<0?'neg':''}">${fmt(m.profit)}</td><td>${fmt(m.cum)}</td>
+      <td>${fmt(m.distrib)}</td><td>${fmt(m.hoang)}</td><td>${fmt(m.tai)}</td></tr>
+  `).join('') : `<tr class="empty-row"><td colspan="8">Chưa có dữ liệu tháng nào — sang tab "Nhập liệu hằng ngày" để bắt đầu.</td></tr>`;
+}
+
+['pickDay','pickMonth','pickYear'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => recomputeDashboard());
+});
+
+/* =========================================================
+   PAGE 3: DỮ LIỆU NỀN
+   ========================================================= */
+function renderBase(){
+  document.getElementById('cap-hoang-total').textContent = fmt(capitalTotal('hoang'));
+  document.getElementById('cap-tai-total').textContent = fmt(capitalTotal('tai'));
+  document.getElementById('pool-total').textContent = fmt(capitalPool());
+  document.getElementById('ratio-hoang').value = Math.round(appData.ratioHoang*100);
+  document.getElementById('ratio-tai').value = Math.round(ratioTai()*100) + ' %';
+
+  document.getElementById('ratio-hoang').addEventListener('input', () => {
+    const h = parseFloat(document.getElementById('ratio-hoang').value)||0;
+    document.getElementById('ratio-tai').value = (100-h) + ' %';
+  });
+
+  document.getElementById('b-revenue').value = appData.budget.revenue;
+  document.getElementById('b-thueMatBang').value = appData.budget.costs.thueMatBang;
+  COST_KEYS.forEach(k => document.getElementById('b-'+k).value = appData.budget.costs[k]);
+  updateBudgetPreview();
+  document.getElementById('b-thueMatBang').addEventListener('input', updateBudgetPreview);
+  COST_KEYS.forEach(k => document.getElementById('b-'+k).addEventListener('input', updateBudgetPreview));
+  document.getElementById('b-revenue').addEventListener('input', updateBudgetPreview);
+
+  renderMenuTables();
+}
+
+function updateBudgetPreview(){
+  const rev = parseFloat(document.getElementById('b-revenue').value)||0;
+  const rent = parseFloat(document.getElementById('b-thueMatBang').value)||0;
+  const costTotal = rent + COST_KEYS.reduce((s,k)=>s+(parseFloat(document.getElementById('b-'+k).value)||0),0);
+  document.getElementById('b-cost-total').textContent = fmt(costTotal);
+  const profitEl = document.getElementById('b-profit');
+  profitEl.textContent = fmt(rev-costTotal);
+  profitEl.classList.toggle('neg', rev-costTotal<0);
+}
+
+async function saveCapital(){
+  appData.ratioHoang = (parseFloat(document.getElementById('ratio-hoang').value)||0)/100;
+  const { error } = await sb.from('settings').update({ ratio_hoang: appData.ratioHoang }).eq('id', 1);
+  if(error){ toast('Lỗi khi lưu — thử lại nhé'); console.error(error); return; }
+  toast('Đã lưu tỉ lệ chia lợi nhuận');
+  renderBase();
+}
+
+async function saveBudget(){
+  appData.budget.revenue = parseFloat(document.getElementById('b-revenue').value)||0;
+  appData.budget.costs.thueMatBang = parseFloat(document.getElementById('b-thueMatBang').value)||0;
+  COST_KEYS.forEach(k => appData.budget.costs[k] = parseFloat(document.getElementById('b-'+k).value)||0);
+  const { error } = await sb.from('settings').update({
+    budget_revenue: appData.budget.revenue,
+    budget_costs: appData.budget.costs
+  }).eq('id', 1);
+  if(error){ toast('Lỗi khi lưu — thử lại nhé'); console.error(error); return; }
+  toast('Đã lưu ngân sách dự kiến');
+  updateLivePreview();
+}
+
+/* ---- Menu (danh mục món) ---- */
+function nextCodeFor(category){
+  const prefix = category === 'nuoc' ? 'N' : 'B';
+  const nums = appData.menu.filter(it=>it.category===category)
+    .map(it => parseInt(it.code.slice(1),10)).filter(n=>!isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `${prefix}${String(next).padStart(2,'0')}`;
+}
+
+async function addMenuItem(category){
+  const item = {code:nextCodeFor(category), name:'', price:0, image:null, category};
+  const { error } = await sb.from('menu_items').insert({
+    code: item.code, name: item.name, price: item.price, image: item.image, category: item.category
+  });
+  if(error){ toast('Lỗi khi thêm món — thử lại nhé'); console.error(error); return; }
+  appData.menu.push(item);
+  renderMenuTables();
+}
+
+async function deleteMenuItem(code){
+  if(!confirm(`Xóa món ${code}?`)) return;
+  const { error } = await sb.from('menu_items').delete().eq('code', code);
+  if(error){ toast('Lỗi khi xóa — thử lại nhé'); console.error(error); return; }
+  appData.menu = appData.menu.filter(it=>it.code!==code);
+  renderMenuTables();
+}
+
+function renderMenuTables(){
+  const renderGroup = (category, tbodyId) => {
+    const tbody = document.getElementById(tbodyId);
+    const rows = appData.menu.filter(it=>it.category===category);
+    tbody.innerHTML = rows.map(it => `
+      <tr>
+        <td class="code-cell">${it.code}</td>
+        <td><input type="text" placeholder="Tên món..." value="${it.name.replace(/"/g,'&quot;')}" data-code="${it.code}" data-field="name"></td>
+        <td><input type="number" min="0" step="1" value="${it.price}" data-code="${it.code}" data-field="price"></td>
+        <td><button class="menu-del-btn" title="Xóa" onclick="deleteMenuItem('${it.code}')">🗑️</button></td>
+      </tr>`).join('');
+  };
+  renderGroup('nuoc', 'menu-nuoc-rows');
+  renderGroup('banh', 'menu-banh-rows');
+
+  document.querySelectorAll('table.menu-table input[data-code]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const it = appData.menu.find(it=>it.code===inp.dataset.code);
+      if(!it) return;
+      if(inp.dataset.field==='name') it.name = inp.value;
+      if(inp.dataset.field==='price') it.price = parseFloat(inp.value)||0;
+    });
+  });
+}
+
+async function saveMenu(){
+  const rows = appData.menu.map(it => ({
+    code: it.code, name: it.name, price: it.price, image: it.image, category: it.category
+  }));
+  const { error } = await sb.from('menu_items').upsert(rows, { onConflict: 'code' });
+  if(error){ toast('Lỗi khi lưu danh mục — thử lại nhé'); console.error(error); return; }
+  toast('Đã lưu danh mục menu');
+  maybeRefreshItemRows();
+}
+
+/* =========================================================
+   IMPORT / EXPORT JSON  (tạm thời thay cho Supabase)
+   ========================================================= */
+function exportData(){
+  const blob = new Blob([JSON.stringify(appData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `little-food-corner-data-${todayStr()}.json`;
+  a.click();
+}
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      appData = parsed;
+      if(!appData.menu) appData.menu = buildDefaultMenu();
+      renderItemSalesRows();
+      renderEntryHistory(); renderBase(); renderDashboard();
+      toast('Đã nhập dữ liệu thành công');
+    }catch(err){ toast('File không hợp lệ'); }
+  };
+  reader.readAsText(file);
+});
+
+/* =========================================================
+   INIT
+   ========================================================= */
+document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); handleLogin(); });
+
+async function bootstrap(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session && session.user){
+    await onSignedIn(session.user);
+  }
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_OUT'){
+    currentUser = null; currentRole = null;
+    document.getElementById('app-root').classList.remove('ready');
+    document.body.classList.remove('role-owner','role-staff');
+    document.getElementById('auth-screen').classList.remove('hidden');
+  }
+});
+
+bootstrap();
+</script>
+</body>
+</html>
